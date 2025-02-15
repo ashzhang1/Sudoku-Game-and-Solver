@@ -9,7 +9,6 @@ class SudokuCell:
         self.is_fixed = is_fixed
         self.possible_values = possible_values
 
-
     def set_value(self, value: int) -> None:
         self.value = value
     
@@ -22,11 +21,17 @@ class SudokuCell:
     def is_fixed(self) -> bool:
         return self.is_fixed == True
     
+    def get_row_num(self) -> int:
+        return self.row
+    
+    def get_col_num(self) -> int:
+        return self.col
+    
     def get_position(self) -> Tuple[int]:
         return (self.row, self.col)
     
     def get_box_num(self) -> int:
-        return (self.row / 3) * 3 + (self.col / 3)
+        return (self.row // 3) * 3 + (self.col // 3)
     
     # For the possible values - these will be useful for solver
     def get_candidate_values(self) -> Set[int]:

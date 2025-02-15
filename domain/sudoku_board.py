@@ -41,7 +41,7 @@ class SudokuBoard:
         return col_cells
     
     def get_box(self, row: int, col: int) -> List[SudokuCell]:
-        box_num = (row / 3) * 3 + (col / 3)
+        box_num = (row // 3) * 3 + (col // 3)
         box_cells = list()
 
         for row_index in range(len(self.board_grid)):
