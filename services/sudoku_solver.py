@@ -2,6 +2,7 @@ from typing import Dict, List, Tuple
 from domain.sudoku_board import SudokuBoard
 from domain.sudoku_cell import SudokuCell
 from services.sudoku_validator import SudokuValidator
+from collections import deque
 
 class sudoku_solver:
 
@@ -12,9 +13,135 @@ class sudoku_solver:
         self._domain_changes: Dict[int, List[Tuple[int, int]]] = {}
         self._move_count = 0
     
-    def solve(self): pass
+    def solve(self) -> SudokuBoard:
+        """
+        main solve method
+        """
 
-    def _ac3(self): pass
+        # Initial board is unsolvable
+        if not self._ac3():
+            return None
+
+        while not self.sudoku_board.is_board_complete():
+
+            mrv_cell = self._get_mrv_cell()
+
+            # No more mrv cell, so we need to backtrack
+            if mrv_cell == None:
+                if len(self._stack) == 0:
+                    return None # No solution exists
+                self._undo_last_move()
+                continue
+
+            # Begin to try candidate values
+            value_placed = False
+            for val in mrv_cell.get_candidate_values():
+
+                # Try this value
+                self._place_value(mrv_cell, val)
+
+                if not self._forward_check():
+                    self._undo_last_move()
+                    continue # Try next value
+
+                if not self._ac3():
+                    self._undo_last_move()
+                    continue # Try next value
+
+                value_placed = True
+                break
+
+             # None of values were able to be placed
+            if not value_placed:
+                if len(self._stack) == 0:
+                    return None  # No solution exists
+            self._undo_last_move()
+            continue
+
+        return self.sudoku_board
+
+
+    def _ac3(self) -> bool:
+
+        # Queue that contains the arcs
+        queue = deque()
+        queue.extend(self._get_all_arcs())
+
+        # Iterate until queue is empty or we get inconsistency
+        while queue:
+            arc = queue.popleft()
+            domain_changed = self._check_arc_consistency(arc)
+
+            from_cell = arc[0]
+
+            # Empty domain --> arc is inconsistent
+            if len(from_cell.get_candidate_values()) == 0:
+                return False
+
+            if domain_changed:
+                queue.extend(self._add_back_arcs(arc[0]))
+        
+        return True
+    
+    def _get_all_arcs(self) -> List[Tuple[SudokuCell, SudokuCell]]:
+        result = list()
+        num_rows = len(self.sudoku_board)
+        num_cols = len(self.sudoku_board[0])
+
+        for row_num in range(num_rows):
+            for col_num in range(num_cols):
+                from_cell = self.sudoku_board.get_cell(row_num, col_num)
+                result.extend([(cell, from_cell) for cell in self.sudoku_board.get_row(row_num) if cell != from_cell])
+                result.extend([(cell, from_cell) for cell in self.sudoku_board.get_column(col_num) if cell != from_cell])
+                result.extend([(cell, from_cell) for cell in self.sudoku_board.get_box(row_num, col_num) if cell != from_cell])
+        
+        return result
+
+
+    def _check_arc_consistency(self, arc: Tuple[SudokuCell, SudokuCell]) -> bool:
+        """
+        Given 2 cells (A, B), this function will find any values in A that have
+        no supporting value in B. Then we need to remove that value.
+
+        If we did remove that value from A's domain,
+        then we return true as A's domain has changed
+        """
+        domain_changed = False
+        cell_a = arc[0]
+        cell_b = arc[1]
+
+        for a_value in cell_a.get_candidate_values():
+            supporting_val_found = self._find_supporting_value(a_value, cell_b.get_candidate_values())
+
+            # value a is not supported, must be removed
+            if not supporting_val_found:
+                cell_a.remove_candidate_value(a_value)
+                domain_changed = True
+            
+        return domain_changed
+    
+
+    def _find_supporting_value(self, val: int, candidates: List[int]) -> bool:
+        for candidate in candidates:
+            if candidate != val:
+                return True
+        return False
+
+
+    def _add_back_arcs(self, cell: SudokuCell) -> List[Tuple[SudokuCell, SudokuCell]]:
+
+        result = list()
+
+        cell_row = cell.get_row_num()
+        cell_col = cell.get_col_num()
+        cell_box = cell.get_box_num()
+
+        result.extend([(related_cell, cell) for related_cell in self.sudoku_board.get_row(cell_row) if cell != related_cell])
+        result.extend([(related_cell, cell) for related_cell in self.sudoku_board.get_column(cell_col) if cell != related_cell])
+        result.extend([(related_cell, cell) for related_cell in self.sudoku_board.get_box(cell_row, cell_box) if cell != related_cell])
+        
+        return result
+
 
     def _forward_check(self) -> bool:
         changes = self._domain_changes[self._move_count]
