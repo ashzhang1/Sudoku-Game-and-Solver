@@ -2,12 +2,19 @@ from typing import List, Set, Tuple
 
 class SudokuCell:
 
-    def __init__(self, value: int, row: int, col: int, is_fixed: bool, possible_values: Set[int]):
+    def __init__(
+        self, 
+        row: int, 
+        col: int,
+        value: int = None,
+        is_fixed: bool = False, 
+        possible_values: Set[int] = None
+    ):
         self.value = value
         self.row = row
         self.col = col
         self.is_fixed = is_fixed
-        self.possible_values = possible_values
+        self.possible_values = possible_values if possible_values is not None else set(range(1, 10))
 
     def set_value(self, value: int) -> None:
         self.value = value
@@ -44,7 +51,7 @@ class SudokuCell:
         self.possible_values.remove(value)
     
     def clear_candidate_values(self) -> None:
-        self.possible_values.clear()
+        self.possible_values.clear() 
 
     
 

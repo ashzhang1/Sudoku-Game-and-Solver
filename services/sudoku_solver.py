@@ -4,11 +4,11 @@ from domain.sudoku_cell import SudokuCell
 from services.sudoku_validator import SudokuValidator
 from collections import deque
 
-class sudoku_solver:
+class SudokuSolver:
 
-    def __init__(self, sudoku_board: SudokuBoard):
+    def __init__(self, sudoku_board: SudokuBoard, validator: SudokuValidator):
         self.sudoku_board = sudoku_board
-        self._validator = SudokuValidator()
+        self._validator = validator
         self._stack: List[Tuple[SudokuCell, int]] = []
         self._domain_changes: Dict[int, List[Tuple[int, int]]] = {}
         self._move_count = 0
