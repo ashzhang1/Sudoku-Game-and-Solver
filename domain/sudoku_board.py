@@ -17,6 +17,9 @@ class SudokuBoard:
         self.selected_position = selected_position
         self.highlighted_positions = highlighted_positions
         self.fixed_positions = fixed_positions
+
+    def get_board_grid(self) -> List[List[SudokuCell]]:
+        return self.board_grid
     
     def get_cell(self, row: int, col: int) -> SudokuCell:
         return self.board_grid[row][col]
@@ -24,7 +27,7 @@ class SudokuBoard:
     def place_value(self, row: int, col: int, val: int) -> None:
         self.board_grid[row][col].set_value(val)
         self.board_grid[row][col].clear_candidate_values()
-        self._update_related_cells(self.board_grid[row][col])
+        self._update_related_cells(self.board_grid[row][col], val)
 
     def _update_related_cells(self, cell: SudokuCell, value: int, is_removing: bool = True) -> None:
         # Get all related cells
@@ -71,23 +74,16 @@ class SudokuBoard:
         return col_cells
     
     def get_box(self, row: int, col: int) -> List[SudokuCell]:
+        # Calculate box number from row and column
         box_num = (row // 3) * 3 + (col // 3)
-        box_cells = list()
+        return self.get_cells_by_box_num(box_num)
 
-        for row_index in range(len(self.board_grid)):
-            for col_index in range(len(self.board_grid[row])):
-                if self.board_grid[row_index][col_index].get_box_num == box_num:
-                    box_cells.append(self.board_grid[row_index][col_index])
-        
-        return box_cells
-    
     def get_cells_by_box_num(self, box_num: int) -> List[SudokuCell]:
-
         # Convert box_num to starting row/col
         start_row = (box_num // 3) * 3
         start_col = (box_num % 3) * 3
         
-        box_cells = list()
+        box_cells = []
         
         for row in range(start_row, start_row + 3):
             for col in range(start_col, start_col + 3):
@@ -123,4 +119,25 @@ class SudokuBoard:
     
     def is_position_valid(self, row: int, col: int) -> bool:
         return (row >= 0 and row < 9) and (col >= 0 and col < 9)
-
+    
+    def copy_board(self) -> 'SudokuBoard':
+        """Create a new copy of this board"""
+        # Create new grid with copied cells
+        new_grid = []
+        for row in self.board_grid:
+            new_row = []
+            for cell in row:
+                new_row.append(cell.copy())
+            new_grid.append(new_row)
+        
+        # Copy other board properties
+        new_selected_pos = self.selected_position
+        new_highlighted_pos = set(self.highlighted_positions) if self.highlighted_positions else None
+        new_fixed_pos = list(self.fixed_positions) if self.fixed_positions else None
+        
+        return SudokuBoard(
+            board_grid=new_grid,
+            selected_position=new_selected_pos,
+            highlighted_positions=new_highlighted_pos,
+            fixed_positions=new_fixed_pos
+        )

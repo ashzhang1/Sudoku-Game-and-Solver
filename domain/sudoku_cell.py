@@ -28,6 +28,9 @@ class SudokuCell:
     def is_fixed(self) -> bool:
         return self._is_fixed == True
     
+    def set_is_fixed(self, fixed: bool) -> bool:
+        self._is_fixed = fixed
+    
     def get_row_num(self) -> int:
         return self.row
     
@@ -52,6 +55,16 @@ class SudokuCell:
     
     def clear_candidate_values(self) -> None:
         self.possible_values.clear() 
+    
+    def copy(self) -> 'SudokuCell':
+        """Create a new copy of this cell"""
+        return SudokuCell(
+            row=self.row,
+            col=self.col,
+            value=self.value,
+            _is_fixed=self._is_fixed,
+            possible_values=set(self.possible_values)  # Create new set with copied values
+        )
 
     
 

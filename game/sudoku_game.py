@@ -13,7 +13,12 @@ class SudokuGame:
         self._sudoku_board = None
 
     def start_new_game(self) -> None:
-       self._sudoku_board = self._generator.generate_sudoku()
+       # Keep trying until we get a valid board
+        while True:
+            board = self._generator.generate_sudoku()
+            if board is not None:
+                self._sudoku_board = board
+                break
 
     def process_players_move(self, row_num: int, col_num: int, val: int) -> bool:
         # Not a valid position

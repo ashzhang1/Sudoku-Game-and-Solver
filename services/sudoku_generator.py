@@ -6,105 +6,123 @@ from domain.sudoku_cell import SudokuCell
 import random
 
 class SudokuGenerator:
-
     def __init__(self):
         self._validator = SudokuValidator()
 
     def generate_sudoku(self) -> SudokuBoard:
+        """Generate a new Sudoku puzzle"""
 
-        starting_board_grid = self._generate_starting_board()
-        sudoku_board = SudokuBoard(starting_board_grid)
-
-        filled_board = self._fill_board(sudoku_board)
+        # Create empty board
+        board = SudokuBoard(self._generate_empty_board())
+        
+        # Place random seeds
+        self._place_random_seeds(board)
+        
+        # Solve the rest of the board
+        solver = SudokuSolver(board, self._validator)
+        filled_board = solver.solve()
+        
         if filled_board is None:
+            print("Failed to generate valid board")
             return None
         
+        # Remove numbers to create the puzzle
         self._remove_numbers(filled_board)
+        self._mark_all_numbers_fixed(filled_board)
         return filled_board
 
-    
-    def _generate_starting_board(self) -> List[List[SudokuCell]]:
-        board_grid = list()
+    def _generate_empty_board(self) -> List[List[SudokuCell]]:
+        """Create an empty 9x9 board"""
+        return [[SudokuCell(row, col) for col in range(9)] for row in range(9)]
 
-        for row_num in range(9):
-            row = list()
-            for col_num in range(9):
-                row.append(SudokuCell(row_num, col_num))
-            board_grid.append(row)
-        
-        return board_grid
-    
-    def _fill_board(self, board: SudokuBoard) -> SudokuBoard:
-        """
-        Core generator logic
-        """
-        # place random seed numbers
-        self._place_random_seeds(board)
+    def _fill_diagonal_boxes(self, board: SudokuBoard) -> None:
+        """Fill the three diagonal 3x3 boxes with valid numbers"""
+        # 0 -> top left box, 4 -> middle box, 8 -> bottom right box
+        for box_num in [0, 4, 8]:
+            self._fill_box(board, box_num)
 
-        # use solver to solve the board
-        solver = SudokuSolver(board, self._validator)
-        completed_board = solver.solve()
-
-        # validate the completed board
-        if completed_board is not None and self._validator.is_board_valid(completed_board):
-            return completed_board
-        
-        return None
-
-    def _place_random_seeds(self, empty_board: SudokuBoard) -> None:
-
-        # fill top left box (box num 0)
-        self._randomly_fill_box(empty_board, 0)
-
-        # fill middle box (box num 4)
-        self._randomly_fill_box(empty_board, 4)
-
-        # fill bottom right box (box num 8)
-        self._randomly_fill_box(empty_board, 8)
-
-    
-    def _randomly_fill_box(self, board: SudokuBoard, box_num: int):
-
-        cells = board.get_cells_by_box_num(box_num)
+    def _fill_box(self, board: SudokuBoard, box_num: int) -> None:
+        """Fill a 3x3 box with a complete set of numbers 1-9"""
         numbers = list(range(1, 10))
         random.shuffle(numbers)
-
-        for cell, val in zip(cells, numbers):
-            board.place_value(cell.get_row_num(), cell.get_col_num(), val)
-
+        
+        # Calculate starting position
+        start_row = (box_num // 3) * 3
+        start_col = (box_num % 3) * 3
+        
+        # Fill the box
+        for i in range(3):
+            for j in range(3):
+                row = start_row + i
+                col = start_col + j
+                value = numbers[i * 3 + j]
+                board.place_value(row, col, value)
+                board.get_cell(row, col)._is_fixed = True
+    
+    def _place_random_seeds(self, board: SudokuBoard) -> None:
+        """Place random seed numbers as starting points"""
+        # Place around 10-12 random numbers
+        num_seeds = random.randint(10, 12)
+        positions = [(i, j) for i in range(9) for j in range(9)]
+        random.shuffle(positions)
+        
+        seeds_placed = 0
+        for row, col in positions:
+            if seeds_placed >= num_seeds:
+                break
+                
+            # Get valid numbers for this position
+            valid_numbers = list(range(1, 10))
+            random.shuffle(valid_numbers)
+            
+            for num in valid_numbers:
+                # Try placing the number
+                board.place_value(row, col, num)
+                
+                # Check if it's valid
+                if self._validator.is_grid_valid(board.get_board_grid()):
+                    board.get_cell(row, col)._is_fixed = True
+                    seeds_placed += 1
+                    break
+                else:
+                    board.clear_cell_value(row, col)
 
     def _remove_numbers(self, board: SudokuBoard) -> None:
+        """Remove numbers while ensuring unique solution remains"""
         positions = [(row, col) for row in range(9) for col in range(9)]
         random.shuffle(positions)
         
-        # 81 squares in total and 35 fixed squares --> 46 blank squares
-        # This is going to be fixed for now
-        numbers_to_remove = 46
-        removed_count = 0
+        # Removing 45-52 numbers is considered to be easy to medium
+        numbers_to_remove = random.randint(45, 52)
+        removed = 0
         
-        for pos in positions:
-
-            row, col = pos
-            # Store original value before removal
-            original_value = board.get_cell(row, col).value
+        for row, col in positions:
+            if removed >= numbers_to_remove:
+                break
+                
+            cell = board.get_cell(row, col)
+            temp_value = cell.value
             
-            # Try removing this number
-            board.get_cell(row, col).clear_value()
+            # Try removing it
+            board.clear_cell_value(row, col)
             
-            # Create new solver to test unique solution
-            test_solver = SudokuSolver(board, self._validator)
-            if test_solver.solve() is not None:
-                removed_count += 1
-                if removed_count == numbers_to_remove:
-                    break
+            # Make a copy of the board for solving
+            test_board = board.copy_board()
+            solver = SudokuSolver(test_board, self._validator)
+            
+            # If still uniquely solvable, keep it removed
+            if solver.solve() is not None:
+                removed += 1
             else:
-                # Put the number back b/c removal makes puzzle unsolvable
-                board.place_value(row, col, original_value)
-        
-        # Set remaining numbers as fixed
+                # Put it back if removing it creates multiple solutions
+                board.place_value(row, col, temp_value)
+
+    def _mark_all_numbers_fixed(self, board: SudokuBoard) -> None:
+        """Mark all non-empty cells as fixed"""
         for row in range(9):
             for col in range(9):
                 cell = board.get_cell(row, col)
-                if not cell.is_empty():
-                    cell.is_fixed = True
-
+                if cell.value is not None:
+                    cell.set_is_fixed(True)
+                else:
+                    cell.set_is_fixed(False)
