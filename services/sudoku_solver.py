@@ -122,10 +122,7 @@ class SudokuSolver:
     
 
     def _find_supporting_value(self, val: int, candidates: List[int]) -> bool:
-        for candidate in candidates:
-            if candidate != val:
-                return True
-        return False
+        return any(candidate != val for candidate in candidates)
 
 
     def _add_back_arcs(self, cell: SudokuCell) -> List[Tuple[SudokuCell, SudokuCell]]:

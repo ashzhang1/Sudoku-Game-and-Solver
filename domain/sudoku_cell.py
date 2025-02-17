@@ -7,13 +7,13 @@ class SudokuCell:
         row: int, 
         col: int,
         value: int = None,
-        is_fixed: bool = False, 
+        _is_fixed: bool = False, 
         possible_values: Set[int] = None
     ):
         self.value = value
         self.row = row
         self.col = col
-        self.is_fixed = is_fixed
+        self._is_fixed = _is_fixed
         self.possible_values = possible_values if possible_values is not None else set(range(1, 10))
 
     def set_value(self, value: int) -> None:
@@ -26,7 +26,7 @@ class SudokuCell:
         return self.value == None
     
     def is_fixed(self) -> bool:
-        return self.is_fixed == True
+        return self._is_fixed == True
     
     def get_row_num(self) -> int:
         return self.row
