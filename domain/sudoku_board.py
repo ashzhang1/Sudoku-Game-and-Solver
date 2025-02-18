@@ -101,11 +101,7 @@ class SudokuBoard:
                     return False
         
         validator = SudokuValidator()
-        return validator.is_board_valid(self)
-    
-    def is_board_valid(self) -> bool:
-        validator = SudokuValidator()
-        return validator.is_board_valid(self)
+        return validator.is_grid_valid(self.board_grid)
 
     def reset_board(self) -> None:
         for row_index in range(len(self.board_grid)):

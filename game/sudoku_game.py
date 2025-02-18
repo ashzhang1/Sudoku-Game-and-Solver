@@ -1,8 +1,7 @@
 from services.sudoku_generator import SudokuGenerator
 from services.sudoku_validator import SudokuValidator
 from services.sudoku_solver import SudokuSolver
-from domain.sudoku_board import SudokuBoard
-from domain.sudoku_cell import SudokuCell
+import random
 
 
 class SudokuGame:
@@ -71,6 +70,59 @@ class SudokuGame:
 
     def is_game_won(self):
         return self._sudoku_board.is_board_complete()
+    
+    def get_hint(self) -> bool:
+        """
+        Reveals one random empty cell's correct value
+        """
+        # Get all empty cells
+        empty_cells = []
+        for row in range(9):
+            for col in range(9):
+                cell = self._sudoku_board.get_cell(row, col)
+                if cell.is_empty():
+                    empty_cells.append((row, col))
+        
+        if not empty_cells:
+            return False  # No empty cells left
+            
+        # Pick a random empty cell
+        row, col = random.choice(empty_cells)
+        
+        # Create a copy of the board for solving
+        board_copy = self._sudoku_board.copy_board()
+        solver = SudokuSolver(board_copy, self._validator)
+        
+        # Solve the board to get the correct value
+        if solver.solve():
+            correct_value = board_copy.get_cell(row, col).value
+            # Place the value on the original board
+            self._sudoku_board.place_value(row, col, correct_value)
+            self._sudoku_board.get_cell(row, col).set_is_fixed(True)  # Make it fixed
+            return True
+            
+        return False
+
+    def solve_game(self) -> bool:
+        if not self._sudoku_board:
+            return False
+            
+        solver = SudokuSolver(self._sudoku_board, self._validator)
+        
+        if solver.solve():
+            # Store which cells were empty before solving
+            was_empty = [[self._sudoku_board.get_cell(row, col).is_empty() 
+                        for col in range(9)] for row in range(9)]
+            
+            # Only mark newly filled cells as fixed (orange)
+            for row in range(9):
+                for col in range(9):
+                    cell = self._sudoku_board.get_cell(row, col)
+                    if was_empty[row][col]:  # Only change color of new numbers
+                        cell.set_is_fixed(True)
+            return True
+            
+        return False
 
 
 
