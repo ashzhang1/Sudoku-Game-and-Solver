@@ -23,7 +23,7 @@ class SudokuSolver:
         Basic backtracking algorithm. Will extend later to use AC3
         """
         # Find an empty cell
-        empty_cell = self._find_empty_cell()
+        empty_cell = self._find_empty_cell_mrv()
         if not empty_cell:
             return True
 
@@ -45,15 +45,37 @@ class SudokuSolver:
                 self.sudoku_board.clear_cell_value(row, col)
 
         return False
-
-    def _find_empty_cell(self) -> Optional[SudokuCell]:
-        """Find first empty cell in the board"""
+    
+    def _find_empty_cell_mrv(self) -> Optional[SudokuCell]:
+        """Find empty cell with minimum remaining values (MRV)"""
+        min_remaining = 10  # Default to 10 (9 is max)
+        mrv_cell = None
+        
         for row_num in range(9):
             for col_num in range(9):
                 cell = self.sudoku_board.get_cell(row_num, col_num)
+
                 if cell.is_empty():
-                    return cell
-        return None # If we got here, then no empty cells and its complete
+                    legal_values = self._count_legal_values(cell)
+                    
+                    # Update minimum
+                    if legal_values < min_remaining:
+                        min_remaining = legal_values
+                        mrv_cell = cell
+                        
+                        # If we find a cell with only one legal value,just return that immediately
+                        if min_remaining == 1:
+                            return mrv_cell
+        
+        return mrv_cell  # None -> no more empty cells
+
+    def _count_legal_values(self, cell: SudokuCell) -> int:
+        """Count number of legal values that could be placed in cell"""
+        count = 0
+        for val in range(1, 10):
+            if self._is_valid_to_place(cell, val):
+                count += 1
+        return count
 
     def _is_valid_to_place(self, cell: SudokuCell, val: int) -> bool:
         """Check if its valid to place value in cell"""

@@ -2,13 +2,9 @@
 
 This is a Python implementation of s Sudoku game along with a solver. This project was built to explore a practical application of backtracking algorithms using the popular Sudoku puzzle.
 
-### User Solving Puzzle
-
-![Demo 1](assets/user_solved.gif)
-
 ### Computer Solving Puzzle
 
-![Demo 2](assets/computer_solved.gif)
+![Demo](assets/computer_solved.gif)
 
 ## Key Game Features
 
@@ -47,7 +43,8 @@ The Sudoku solver is implemented using a **backtracking** approach. You can read
 The high level steps of the solver are as follows:
 
 1. First need to check if the board is actually valid.
-2. Next, it finds an empty cell (currently it finds the first empty cell, but looking to use MRV algorithm to optimise this step).
+2. Next, it finds an empty cell.
+   - An easy way to do this is to just return the first empty cell encountered. But, to optimise this process I have used the Minimum Remaining Values heuristic ([MRV](https://ai.stackexchange.com/questions/45705/minimum-remaining-values-heuristic-more-powerful-than-degree-heuristic)) to more efficiently pick out the next cell to fill in.
 3. Then, it attempts to place a number between 1–9 in the empty cell, recursively solving the board with each choice. If a solution is not found, it **backtracks** and try the next possible number.
 
 ## Unit Testing
@@ -66,7 +63,7 @@ pip3 install pytest
 pytest -v -s tests/solver/test_sudoku_solver.py
 ```
 
-3. To run the solver tests, run the follow command:
+3. To run the validator tests, run the follow command:
 
 ```
 pytest -v -s tests/validator/test_sudoku_validator.py
