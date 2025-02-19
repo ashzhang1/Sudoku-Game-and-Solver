@@ -10,6 +10,10 @@ class SudokuSolver:
 
     def solve(self) -> Optional[SudokuBoard]:
         """Main solve method using backtracking"""
+        # First check if initial board is valid
+        if not self._validator.is_grid_valid(self.sudoku_board.get_board_grid()):
+            return None
+        
         if self._solve_backtrack():
             return self.sudoku_board
         return None
